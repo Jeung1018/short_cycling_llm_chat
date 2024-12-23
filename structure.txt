@@ -1,0 +1,50 @@
+backend/
+    chains/
+        __init__.py
+        analysis_chain.py
+        validation_chain.py
+    models/
+        __init__.py
+        response.py
+        state.py
+        validation_models.py
+    nodes/
+        analysis_nodes/
+            __init__.py
+            breaker_analysis.py
+            building_analysis.py
+            hierarchy_analysis.py
+        response_nodes/
+            __init__.py
+            format_response.py
+        __init__.py
+        router_node.py
+        validation_node.py
+    prompts/
+        __init__.py
+        analysis_prompts.py
+        response_prompts.py
+        validation_prompts.py
+    utils/
+        __init__.py
+        data_fetchers.py
+        formatters.py
+        mongodb.py
+    workflows/
+        __init__.py
+        main_workflow.py
+    main.py
+
+frontend/
+    utils/
+        session_manager.py
+    streamlit_app.py
+
+venv/
+__init__.py
+.env
+.gitignore
+config.py
+query_test.py
+README.md
+requirements.txt
