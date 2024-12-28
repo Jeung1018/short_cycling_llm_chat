@@ -12,8 +12,8 @@ def answer_fetched_gen_data_node(state: State) -> State:
     if not fetched_gen_data:
         return {
             **state,
-            "answer": "죄송합니다. 데이터를 찾을 수 없습니다.",
-            "chat_history": state.get("chat_history", []) + ["죄송합니다. 데이터를 찾을 수 없습니다."]
+            "answer": "Sorry, no data found. Please try asking a different question about Building 530's short cycling events in October 2024. We are continuously improving our AI to better understand and find relevant data for your queries.",
+            "chat_history": state.get("chat_history", []) + ["Sorry, no data found. Please try asking a different question about Building 530's short cycling events in October 2024. We are continuously improving our AI to better understand and find relevant data for your queries."]
         }
 
     # LLM 체인 실행
