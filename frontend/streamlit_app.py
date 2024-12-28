@@ -2,6 +2,7 @@ import sys
 import os
 from bson import ObjectId
 import json
+import time
 
 # 현재 파일의 디렉토리 경로를 찾습니다
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,14 +39,14 @@ def format_chat_history(history):
     formatted_history = []
     for item in history:
         formatted_history.extend([
-            f"User: {item['query']}",
+            f"Human: {item['query']}",
             f"Assistant: {item['answer']}"
         ])
     return formatted_history
 
 def run_workflow(query: str, previous_docs=None, conversation_history=None):
     """
-    워크플로우를 실행하고 결과를 반환하는 함수
+    워크플로우를 실행하고 state를 반환하는 함수
     """
     # LLM 모델 초기화
     llm = ChatOpenAI(
@@ -60,107 +61,135 @@ def run_workflow(query: str, previous_docs=None, conversation_history=None):
     # thread_id 설정
     thread_config = {"configurable": {"thread_id": "streamlit_session"}}
     
-    # chat_history를 문자열 리스트로 변환
-    formatted_history = format_chat_history(conversation_history) if conversation_history else []
-    
-    # previous_docs가 있다면 ObjectId를 문자열로 변환
-    if previous_docs:
-        previous_docs = json.loads(json.dumps(previous_docs, cls=MongoJSONEncoder))
-    
     # 워크플로우 실행
-    result = workflow.invoke(
+    state = workflow.invoke(
         State(
             query=query, 
             llm=llm,
             previous_docs=previous_docs or [],
-            chat_history=formatted_history
+            chat_history=conversation_history or []
         ),
         config=thread_config
     )
     
-    # 결과에서 필요한 정보 추출
-    response = result.get("answer", "Sorry, I couldn't generate an answer.")
-    
-    # fetched_docs에서 ObjectId를 문자열로 변환
-    fetched_docs = json.loads(json.dumps(result.get("fetched_gen_data", []), cls=MongoJSONEncoder))
-    
-    last_interaction = {
-        "query": query,
-        "answer": response,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    
-    return response, fetched_docs, last_interaction
+    return state  # state 전체를 반환
+
+def handle_recommended_question(query_text: str):
+    """추천 질문 클릭 핸들러"""
+    st.session_state.query = query_text
+    st.session_state.run_query = True
 
 # Initialize session state
 init_session_state()
 
-# Streamlit UI
-st.title("Interactive Anomalies Detection")
-st.write("Interact with the LangGraph workflow by asking a question below.")
+# Main content area
+st.title("Short Cycling Analysis Chat")
 
 # Description of the Prototype
 with st.expander("About This Prototype", expanded=False):
     st.markdown("""
-    This app is designed to analyze **short cycling energy anomalies** for **Building 530** during the **month of October 2024**.
+    This app is designed to analyze **short cycling energy anomalies** for **Building 530** during the **month of October 2024**. For each question, the app retrieves relevant data from the database and uses an AI language model to provide detailed, data-driven answers.
 
-    #### What You Can Do:
-    - **Ask Questions About Short Cycling**:
+    #### Getting Started:
+    - **Start with Overview Questions**:
       - Examples:
-        - "Is there any short cycling in Building 530?"
-        - "Is there any short cycling in Building 530 on Oct 15th?"
-        - "How many short cycles occurred on breaker 28722?"
-    - **Get Summarized Insights**:
-      - Total short cycles and recommendations for identified issues.
-    - **Follow-Up Questions**:
-      - Refine or expand your queries based on previous answers.
-
+        - "Give me an overview of short cycling in Building 530 for October 2024"
+        - "What is the electrical hierarchy of Building 530?"
+        - "Show me the the peak day's detail short cycling trends in Building 530"
+    
+    #### Deep Dive Analysis:
+    - **Follow the Suggested Questions**:
+      - Each answer comes with relevant follow-up questions
+      - Questions are designed to guide you through:
+        - Panel-level analysis
+        - Breaker-specific patterns
+        - Temporal trends
+    
     #### Important Notes:
-    - This app **only supports queries** about **Building 530** and **short cycling** for **October 2024**.
-    - Unsupported queries will guide you back to the app's focus.
+    - This app analyzes data for **Building 530** during **October 2024**
+    - Focus on **short cycling anomalies** and their patterns
+    - Use suggested follow-up questions to explore deeper insights
 
-    Start exploring anomalies and trends with precise, contextualized insights!
+    Start with an overview and follow the suggested questions to explore detailed insights!
     """)
 
-# User query input
-query = st.text_input("Enter your query:", placeholder="Type your question here...")
+# Main query input
+query = st.text_input("Enter your query:")
+
+# Sidebar for chat history
+with st.sidebar:
+    st.markdown("## 💬 Chat History")
+    
+    # Clear History button
+    if st.button("Clear History", key="clear_history"):
+        clear_session_state()
+        st.info("Chat history cleared.")
+        
+    # Display chat history
+    if st.session_state.history:
+        for item in reversed(st.session_state.history):
+            with st.container():
+                st.markdown(f"**[{item['timestamp']}]**")
+                st.markdown(f"**Q:** {item['query']}")
+                with st.expander("Show Answer", expanded=False):
+                    st.markdown(item['answer'])
+                st.markdown("---")
+    else:
+        st.info("No chat history yet.")
 
 # Submit button
-if st.button("Submit"):
+if st.button("Submit", key="submit"):
     if query:
         try:
             with st.spinner("Processing your query..."):
-                # Run workflow and get results
-                response, fetched_docs, last_interaction = run_workflow(
+                formatted_history = format_chat_history(st.session_state.history)
+                state = run_workflow(
                     query,
                     previous_docs=st.session_state.previous_docs,
-                    conversation_history=st.session_state.history
+                    conversation_history=formatted_history
                 )
 
-                # Update session state
-                update_session_state(last_interaction, fetched_docs)
-                update_chat_history(query, response)
-
-                # Display answer
+                # Display answer in main area
                 st.success("Generated Answer:")
-                st.write(response)
+                st.write(state["answer"])
+
+                # Update chat history and session state
+                update_chat_history(query, state["answer"])
+                update_session_state(state)
+
+                # Display recommended questions at the bottom
+                if "rec_questions" in state:
+                    st.markdown("---")
+                    st.subheader("💡 Suggested follow-up questions:")
+                    for i, q in enumerate(state["rec_questions"], 1):
+                        st.markdown(f"**{i}.** {q}")
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
     else:
         st.warning("Please enter a query.")
 
-# Display chat history
-st.subheader("Chat History:")
-if st.session_state.history:
-    for item in st.session_state.history:
-        st.markdown(f"**[{item['timestamp']}] Q: {item['query']}**")
-        st.markdown(f"A: {item['answer']}")
-        st.markdown("---")
-else:
-    st.info("No chat history yet.")
+# JavaScript to handle click events
+st.markdown("""
+<script>
+window.addEventListener('message', function(e) {
+    if (e.data.type === 'streamlit:setComponentValue') {
+        // Set the query in session state
+        const queryInput = window.parent.document.querySelector('input[type="text"]');
+        if (queryInput) {
+            queryInput.value = e.data.value;
+            queryInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+});
+</script>
+""", unsafe_allow_html=True)
 
-# Clear History button
-if st.button("Clear History"):
-    clear_session_state()
-    st.info("Chat history cleared.") 
+# Add custom CSS
+st.markdown("""
+<style>
+.recommended-question:hover {
+    background-color: #e1e4e8 !important;
+}
+</style>
+""", unsafe_allow_html=True) 

@@ -12,12 +12,11 @@ def data_router_node(state: State) -> State:
         ("system", """You are an assistant that analyzes user queries to determine the type of data needed.
 
         Query Types:
-        1. "breaker" - Questions about circuit breakers, their status, or operations
-        2. "hierarchy" - Questions about building structure, organization, or layout
-        3. "building" - General questions about the building or its overall systems
-        4. "detail" - Queries that require generating precise MongoDB commands to retrieve structured data, such as the short cycling details for individual breakers and panels, visualization URLs for breakers, or comprehensive information about specific short cycling events, including timestamps, power levels, and durations.
+        1. "hierarchy" - Questions about building electrical structure, related to breakers, panels, and circuits
+        2. "building" - General questions about the building or its overall systems
+        3. "detail" - Queries that require generating precise MongoDB commands to retrieve structured data, such as the short cycling details for individual breakers and panels, visualization URLs for breakers, or comprehensive information about specific short cycling events, including timestamps, power levels, and durations.
         
-        Return ONLY ONE of these exact words: "breaker", "hierarchy", "building", or "detail"."""),
+        Return ONLY ONE of these exact words: "hierarchy", "building", or "detail"."""),
         ("user", "Analyze this query and determine its type: {query}")
     ])
 
@@ -29,7 +28,7 @@ def data_router_node(state: State) -> State:
 
     # 응답 정규화
     query_type = response.content.strip().lower()
-    if query_type not in ["breaker", "hierarchy", "building", "detail"]:
+    if query_type not in ["hierarchy", "building", "detail"]:
         query_type = "building"  # 기본값
 
     print(f"\nQuery: {state['query']}")
@@ -49,14 +48,12 @@ def data_router_rf(state: State) -> str:
         state (State): 현재 그래프 상태
 
     Returns:
-        str: 다음 노드 결정 ('breaker_filter', 'building_analysis', 'hierarchy_analysis', 'detail_analysis')
+        str: 다음 노드 결정 ('building_analysis', 'hierarchy_analysis', 'detail_analysis')
     """
     print('---DATA TYPE ROUTING---')
     query_type = state["query_type"]
 
-    if query_type == "breaker":
-        return "breaker_filter"
-    elif query_type == "hierarchy":
+    if query_type == "hierarchy":
         print('---ROUTE: HIERARCHY ANALYSIS---')
         return "hierarchy_analysis"
     elif query_type == "detail":

@@ -17,8 +17,8 @@ def check_data_required_node(state: State) -> State:
         ("system", """You are an assistant that analyzes user queries and current state data.
         Available data in state:
         - building_info: Contains building information (id, name, panels, dates)
-        - active_breakers: Contains active breaker information
         - building_hierarchy: Contains building's electrical hierarchy structure
+        - fetched_gen_data: Contains detailed information about short cycling events, including timestamps, power levels, durations, and structured data for individual breakers and panels
 
         Determine if additional data retrieval is needed based on:
         1. The user's query and chat history
@@ -29,8 +29,8 @@ def check_data_required_node(state: State) -> State:
 
         Current State Data:
         Building Info: {building_info}
-        Active Breakers: {active_breakers}
-        building_hierarchy: {building_hierarchy}
+        Building Hierarchy: {building_hierarchy}
+        Fetched Data: {fetched_gen_data}
 
         Is additional data retrieval needed?""")
     ])
@@ -41,8 +41,8 @@ def check_data_required_node(state: State) -> State:
         "chat_history": chat_history,
         "query": state["query"],
         "building_info": state.get("building_info", {}),
-        "active_breakers": state.get("active_breakers", {}),
-        "building_hierarchy": state.get("building_hierarchy", {})
+        "building_hierarchy": state.get("building_hierarchy", {}),
+        "fetched_gen_data": state.get("fetched_gen_data", {})
     })
 
     # LLM 응답을 boolean으로 변환

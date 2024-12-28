@@ -15,7 +15,7 @@ from nodes.human_interaction_node import human_interaction_node
 from nodes.mongo_gen_query_node import mongo_gen_query_node
 from nodes.fetch_gen_query_node import fetch_gen_query_node
 from nodes.answer_fetched_gen_data_node import answer_fetched_gen_data_node
-
+from nodes.generate_recommendations_node import generate_recommendations_node
 
 
 
@@ -48,9 +48,9 @@ def create_workflow() -> Any:
     workflow.add_node("fetch_gen_query", fetch_gen_query_node)
     workflow.add_node("answer_fetched_gen_data", answer_fetched_gen_data_node)
 
-
-
     workflow.add_node("format_response", format_response_node)
+
+    workflow.add_node("generate_recommendations", generate_recommendations_node)
     workflow.add_node("human_interaction", human_interaction_node)
     workflow.add_node("additional_question", additional_question_node)
     workflow.add_node("hierarchy_analysis", hierarchy_analysis_node)
@@ -83,15 +83,20 @@ def create_workflow() -> Any:
 
     workflow.add_edge("mongo_gen_query", "fetch_gen_query")
     workflow.add_edge("fetch_gen_query", "answer_fetched_gen_data")
-    workflow.add_edge("answer_fetched_gen_data", "human_interaction")
+    workflow.add_edge("answer_fetched_gen_data", "generate_recommendations")
+    workflow.add_edge("generate_recommendations", "human_interaction")
 
     # 나머지 엣지 연결
     workflow.add_edge("breaker_filter", "fetch_active_breakers")
     workflow.add_edge("fetch_active_breakers", "format_response")
-    workflow.add_edge("format_response", "human_interaction")
+    workflow.add_edge("format_response", "generate_recommendations")
+    workflow.add_edge("generate_recommendations", "human_interaction")
+
     workflow.add_edge("building_analysis", "format_response")
     workflow.add_edge("hierarchy_analysis", "format_response")
-    workflow.add_edge("general_answer", "human_interaction")
+    workflow.add_edge("general_answer", "generate_recommendations")
+    workflow.add_edge("generate_recommendations", "human_interaction")
+    
     workflow.add_edge("additional_question", "check_data_required")
 
     
