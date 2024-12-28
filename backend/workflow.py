@@ -1,7 +1,7 @@
 from typing import Any, Dict
 from langgraph.graph import END, START, StateGraph, MessagesState
 from langgraph.checkpoint.memory import MemorySaver
-from models.state import State
+from backend.models.state import State
 from nodes.check_data_required_node import check_data_required_node, check_data_required_rf
 from nodes.data_router_node import data_router_node, data_router_rf
 from nodes.breaker_filter_node import breaker_filter_node
@@ -12,6 +12,11 @@ from nodes.hierarchy_analysis_node import hierarchy_analysis_node
 from nodes.general_answer_node import general_answer_node
 from nodes.additional_question_node import additional_question_node
 from nodes.human_interaction_node import human_interaction_node
+from nodes.mongo_gen_query_node import mongo_gen_query_node
+from nodes.fetch_gen_query_node import fetch_gen_query_node
+from nodes.answer_fetched_gen_data_node import answer_fetched_gen_data_node
+
+
 
 
 from langchain.prompts import PromptTemplate
@@ -37,6 +42,13 @@ def create_workflow() -> Any:
     workflow.add_node("breaker_filter", breaker_filter_node)
     workflow.add_node("fetch_active_breakers", fetch_active_breakers_node)
     workflow.add_node("building_analysis", building_analysis_node)
+
+
+    workflow.add_node("mongo_gen_query", mongo_gen_query_node)
+    workflow.add_node("fetch_gen_query", fetch_gen_query_node)
+    workflow.add_node("answer_fetched_gen_data", answer_fetched_gen_data_node)
+
+
 
     workflow.add_node("format_response", format_response_node)
     workflow.add_node("human_interaction", human_interaction_node)
@@ -64,10 +76,15 @@ def create_workflow() -> Any:
         {
             'breaker_filter': 'breaker_filter',
             'building_analysis': 'building_analysis',
-            'hierarchy_analysis': 'hierarchy_analysis'
+            'hierarchy_analysis': 'hierarchy_analysis',
+            'detail_analysis' : 'mongo_gen_query'
         }
     )
-    
+
+    workflow.add_edge("mongo_gen_query", "fetch_gen_query")
+    workflow.add_edge("fetch_gen_query", "answer_fetched_gen_data")
+    workflow.add_edge("answer_fetched_gen_data", "human_interaction")
+
     # 나머지 엣지 연결
     workflow.add_edge("breaker_filter", "fetch_active_breakers")
     workflow.add_edge("fetch_active_breakers", "format_response")

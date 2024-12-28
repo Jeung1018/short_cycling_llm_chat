@@ -24,4 +24,6 @@ class State(TypedDict):
     building_info: Dict[str, Any]
     needs_data: bool
     building_hierarchy: Dict[str, Any]
+    mongo_query: str
+    fetched_gen_data: List[Dict[str, Any]]
 

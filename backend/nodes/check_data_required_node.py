@@ -1,12 +1,17 @@
 from models.state import State
 from langchain.prompts import ChatPromptTemplate
 
+
 def check_data_required_node(state: State) -> State:
     """
     LLM을 사용하여 쿼리를 분석하고 추가 데이터 조회 필요 여부를 판단하는 노드
     """
     print('---ROUTE: CHECK DATA REQUIRED---')
-    
+
+    # 이전 대화 내용을 포함한 쿼리 생성
+    chat_history = "\n".join(state.get("chat_history", []))  # chat_history 가져오기
+    query_with_history = f"Chat History:\n{chat_history}\n\nUser Query:\n{state['query']}"
+
     # LLM 프롬프트 템플릿
     prompt = ChatPromptTemplate.from_messages([
         ("system", """You are an assistant that analyzes user queries and current state data.
@@ -14,37 +19,38 @@ def check_data_required_node(state: State) -> State:
         - building_info: Contains building information (id, name, panels, dates)
         - active_breakers: Contains active breaker information
         - building_hierarchy: Contains building's electrical hierarchy structure
-        
+
         Determine if additional data retrieval is needed based on:
-        1. The user's query
+        1. The user's query and chat history
         2. Currently available data in state
-        
+
         Return only 'true' if new data is needed, 'false' if existing state data is sufficient."""),
-        ("user", """Query: {query}
-        
+        ("user", """Chat History:\n{chat_history}\n\nQuery: {query}
+
         Current State Data:
         Building Info: {building_info}
         Active Breakers: {active_breakers}
         building_hierarchy: {building_hierarchy}
-        
+
         Is additional data retrieval needed?""")
     ])
-    
+
     # LLM 체인 실행
     chain = prompt | state["llm"]
     response = chain.invoke({
+        "chat_history": chat_history,
         "query": state["query"],
         "building_info": state.get("building_info", {}),
         "active_breakers": state.get("active_breakers", {}),
         "building_hierarchy": state.get("building_hierarchy", {})
     })
-    
+
     # LLM 응답을 boolean으로 변환
     needs_data = response.content.lower().strip() == 'true'
-    
-    print(f"\nQuery: {state['query']}")
+
+    print(f"\nQuery with History: {query_with_history}")
     print(f"Needs Data: {needs_data}")
-    
+
     return {
         **state,
         "needs_data": needs_data

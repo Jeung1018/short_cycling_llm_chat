@@ -1,6 +1,6 @@
 from typing import Dict
 from models.state import State
-from utils.mongodb import fetch_data_from_mongodb
+from backend.utils.mongodb import fetch_data_from_mongodb
 
 def analyze_building_level(data: Dict) -> Dict:
     """빌딩 레벨 분석"""

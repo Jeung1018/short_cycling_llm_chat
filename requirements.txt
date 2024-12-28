@@ -2,10 +2,9 @@
 streamlit==1.31.0
 
 # LangChain and OpenAI
-langchain==0.1.0
-langchain-core==0.1.27
-langchain-openai==0.0.2
-openai==1.12.0
+langchain==0.3.13
+langchain-openai==0.2.14
+openai==1.58.1
 
 # Vector Database
 pinecone-client==3.0.2
@@ -15,7 +14,7 @@ pymongo
 
 # Utilities
 python-dotenv==1.0.0
-pydantic==2.6.1
+pydantic==2.10.4
 
 # Data Processing
 numpy==1.26.3
@@ -25,7 +24,7 @@ pandas==2.2.0
 tavily-python==0.3.1
 
 # Type Hints
-typing-extensions==4.9.0
+typing-extensions==4.12.2
 
 # Development Tools
 black==24.1.1

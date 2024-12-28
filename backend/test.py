@@ -25,6 +25,9 @@ def test_query(query: str) -> None:
     
     # 첫 번째 실행 - human interaction interrupt까지
     result = workflow.invoke(State(query=query, llm=llm), config=thread_config)
+    print("\nComplete Result:")
+    print(result)
+
     print("\nCurrent Answer:")
     print(result.get("answer", "No answer generated"))
     
@@ -61,7 +64,7 @@ def test_query(query: str) -> None:
 
 if __name__ == "__main__":
     # 단일 쿼리 테스트
-    test_query("Tell me about Building 530's short cycling trend")
+    test_query("tell me the breaker that shows the highest number of short cycling on oct 3rd.")
     
     # 나중에 테스트할 쿼리들
     """
@@ -70,5 +73,7 @@ if __name__ == "__main__":
         "Tell me about Building 530",
         "Show me Building 530's structure",
         "What's the weather like today?"
+        "tell me the breaker that shows the highest number of short cycling on oct 3rd."
+        "Tell me about Building 530's short cycling trend"
     ]
-    """ 
+    """

@@ -1,6 +1,6 @@
 from typing import Dict
 from models.state import State
-from utils.mongodb import fetch_data_from_mongodb
+from backend.utils.mongodb import fetch_data_from_mongodb
 from config import DB_NAME, COLLECTION_NAME, DEFAULT_BUILDING_ID
 
 def fetch_active_breakers_node(state: State) -> dict:
