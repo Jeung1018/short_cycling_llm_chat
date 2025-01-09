@@ -36,6 +36,7 @@ import operator
 import sys
 import logging
 from datetime import datetime
+import os
 
 class QueryIntent(BaseModel):
     query_type: str
@@ -45,7 +46,11 @@ class QueryIntent(BaseModel):
 def create_workflow() -> Any:
     """전체 워크플로우를 생성하고 설정하는 함수"""
     # Configure both logging and stdout redirection
-    log_filename = f'workflow_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    # Create logs directory if it doesn't exist
+    log_dir = 'log'
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_filename = os.path.join(log_dir, f'workflow_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
     
     # Configure logging
     logging.basicConfig(
