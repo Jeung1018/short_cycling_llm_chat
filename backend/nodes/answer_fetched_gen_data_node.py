@@ -33,6 +33,8 @@ def answer_fetched_gen_data_node(state: State) -> State:
         f"Assistant: {response.content}"
     ]
 
+    print("State contents:", dict(state))  # vars(state) 대신 dict(state) 사용
+    
     return {
         **state,
         "answer": response.content,

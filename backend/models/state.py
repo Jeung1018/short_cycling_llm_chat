@@ -27,4 +27,15 @@ class State(TypedDict):
     mongo_query: str
     fetched_gen_data: List[Dict[str, Any]]
     rec_questions: List[Dict[str, Any]]
+    token_count: int
+    validation_errors: str
+    validation_query: str
+    narrowed_mongo_query: str
+    invalid_query_reason: str
+    database_structure: Dict[str, Any]
+    query_narrowed_count: int
+    query_regen_count: int
+    original_mongo_query: str
+    data_truncated: bool
+
 

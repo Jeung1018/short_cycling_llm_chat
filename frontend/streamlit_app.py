@@ -2,7 +2,6 @@ import sys
 import os
 from bson import ObjectId
 import json
-import time
 
 # 현재 파일의 디렉토리 경로를 찾습니다
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,8 +13,7 @@ sys.path.append(project_root)
 sys.path.append(backend_dir)
 
 import streamlit as st
-from datetime import datetime
-from backend.workflow import create_workflow 
+from backend.workflow import create_workflow
 from backend.config import OPENAI_API_KEY, LLM_MODEL, LLM_TEMPERATURE
 from langchain_openai import ChatOpenAI
 from backend.models.state import State
@@ -32,9 +30,21 @@ class MongoJSONEncoder(json.JSONEncoder):
             return str(obj)
         return super().default(obj)
 
+def convert_objectid(obj):
+    """
+    Recursively convert ObjectId instances in a structure to strings.
+    """
+    if isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {k: convert_objectid(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_objectid(i) for i in obj]
+    return obj
+
 def format_chat_history(history):
     """
-    채팅 기록을 문자열 리스트로 변환
+    Format chat history into a string list for conversation context.
     """
     formatted_history = []
     for item in history:
@@ -44,38 +54,37 @@ def format_chat_history(history):
         ])
     return formatted_history
 
-def run_workflow(query: str, previous_docs=None, conversation_history=None):
+def run_workflow(query: str, previous_docs=None, conversation_history=None) -> State:
     """
-    워크플로우를 실행하고 state를 반환하는 함수
+    Executes the workflow and returns the state.
     """
-    # LLM 모델 초기화
+    # Initialize the LLM model
     llm = ChatOpenAI(
         model_name=LLM_MODEL,
         temperature=LLM_TEMPERATURE,
         openai_api_key=OPENAI_API_KEY
     )
     
-    # 워크플로우 생성
+    # Create workflow
     workflow = create_workflow()
     
-    # thread_id 설정
+    # Configure thread_id
     thread_config = {"configurable": {"thread_id": "streamlit_session"}}
     
-    # 워크플로우 실행
+    # Invoke workflow
     state = workflow.invoke(
-        State(
-            query=query, 
-            llm=llm,
-            previous_docs=previous_docs or [],
-            chat_history=conversation_history or []
-        ),
+        State(query=query, llm=llm),
         config=thread_config
     )
     
-    return state  # state 전체를 반환
+    # Convert state to ensure no ObjectId remains
+    state = convert_objectid(state)
+    
+    print("Workflow result state keys:", state.keys())  # Debug
+    return state
 
 def handle_recommended_question(query_text: str):
-    """추천 질문 클릭 핸들러"""
+    """Handles recommended question clicks."""
     st.session_state.query = query_text
     st.session_state.run_query = True
 
@@ -85,47 +94,22 @@ init_session_state()
 # Main content area
 st.title("Short Cycling Analysis Chat")
 
-# Description of the Prototype
 with st.expander("About This Prototype", expanded=False):
     st.markdown("""
-    This app is designed to analyze **short cycling energy anomalies** for **Building 530** during the **month of October 2024**. For each question, the app retrieves relevant data from the database and uses an AI language model to provide detailed, data-driven answers.
-
-    #### Getting Started:
-    - **Start with Overview Questions**:
-      - Examples:
-        - "Give me an overview of short cycling in Building 530 for October 2024"
-        - "What is the electrical hierarchy of Building 530?"
-        - "Show me the the peak day's detail short cycling trends in Building 530"
-    
-    #### Deep Dive Analysis:
-    - **Follow the Suggested Questions**:
-      - Each answer comes with relevant follow-up questions
-      - Questions are designed to guide you through:
-        - Panel-level analysis
-        - Breaker-specific patterns
-        - Temporal trends
-    
-    #### Important Notes:
-    - This app analyzes data for **Building 530** during **October 2024**
-    - Focus on **short cycling anomalies** and their patterns
-    - Use suggested follow-up questions to explore deeper insights
-
-    Start with an overview and follow the suggested questions to explore detailed insights!
+    This app analyzes **short cycling anomalies** in Building 530 for October 2024.
+    Start by entering your query or using suggested follow-up questions for deeper insights.
     """)
 
-# Main query input
 query = st.text_input("Enter your query:")
 
 # Sidebar for chat history
 with st.sidebar:
     st.markdown("## 💬 Chat History")
     
-    # Clear History button
     if st.button("Clear History", key="clear_history"):
         clear_session_state()
         st.info("Chat history cleared.")
         
-    # Display chat history
     if st.session_state.history:
         for item in reversed(st.session_state.history):
             with st.container():
@@ -137,7 +121,6 @@ with st.sidebar:
     else:
         st.info("No chat history yet.")
 
-# Submit button
 if st.button("Submit", key="submit"):
     if query:
         try:
@@ -149,15 +132,26 @@ if st.button("Submit", key="submit"):
                     conversation_history=formatted_history
                 )
 
-                # Display answer in main area
+                print("State before processing:", {k: type(v) for k, v in state.items() if k != "llm"})
+
                 st.success("Generated Answer:")
                 st.write(state["answer"])
 
-                # Update chat history and session state
-                update_chat_history(query, state["answer"])
-                update_session_state(state)
+                try:
+                    print("Updating chat history...")
+                    update_chat_history(query, state["answer"])
+                    print("Chat history updated successfully")
 
-                # Display recommended questions at the bottom
+                    print("Updating session state...")
+                    # Convert state to JSON-serializable form
+                    serializable_state = convert_objectid(state)
+                    update_session_state(serializable_state)
+                    print("Session state updated successfully")
+
+                except Exception as e:
+                    print(f"Error during state update: {str(e)}")
+                    raise e
+
                 if "rec_questions" in state:
                     st.markdown("---")
                     st.subheader("💡 Suggested follow-up questions:")
@@ -165,16 +159,15 @@ if st.button("Submit", key="submit"):
                         st.markdown(f"**{i}.** {q}")
 
         except Exception as e:
+            print(f"Full error details: {str(e)}")
             st.error(f"An error occurred: {e}")
     else:
         st.warning("Please enter a query.")
 
-# JavaScript to handle click events
 st.markdown("""
 <script>
 window.addEventListener('message', function(e) {
     if (e.data.type === 'streamlit:setComponentValue') {
-        // Set the query in session state
         const queryInput = window.parent.document.querySelector('input[type="text"]');
         if (queryInput) {
             queryInput.value = e.data.value;
@@ -185,11 +178,10 @@ window.addEventListener('message', function(e) {
 </script>
 """, unsafe_allow_html=True)
 
-# Add custom CSS
 st.markdown("""
 <style>
 .recommended-question:hover {
     background-color: #e1e4e8 !important;
 }
 </style>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)

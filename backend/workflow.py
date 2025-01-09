@@ -8,16 +8,24 @@ from nodes.breaker_filter_node import breaker_filter_node
 from nodes.fetch_active_breakers_node import fetch_active_breakers_node
 from nodes.format_response_node import format_response_node
 from nodes.building_analysis_node import building_analysis_node
+
 from nodes.hierarchy_analysis_node import hierarchy_analysis_node
 from nodes.general_answer_node import general_answer_node
 from nodes.additional_question_node import additional_question_node
 from nodes.human_interaction_node import human_interaction_node
-from nodes.mongo_gen_query_node import mongo_gen_query_node
+
+
+from nodes.mongo_query_gen_node import mongo_query_gen_node
+from nodes.validate_fetch_data_node import validate_fetch_data_node, validate_fetch_data_rf
+from nodes.validate_mongo_query_node import validate_mongo_query_node, validate_mongo_query_rf
+from nodes.regen_mongo_query_node import regen_mongo_query_node, regen_mongo_query_rf
+from nodes.narrow_down_mongo_query_node import narrow_down_mongo_query_node, narrow_down_mongo_query_rf
+
 from nodes.fetch_gen_query_node import fetch_gen_query_node
 from nodes.answer_fetched_gen_data_node import answer_fetched_gen_data_node
 from nodes.generate_recommendations_node import generate_recommendations_node
 
-
+from nodes.error_node import error_node
 
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -25,6 +33,9 @@ from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 import operator
+import sys
+import logging
+from datetime import datetime
 
 class QueryIntent(BaseModel):
     query_type: str
@@ -33,6 +44,34 @@ class QueryIntent(BaseModel):
 
 def create_workflow() -> Any:
     """전체 워크플로우를 생성하고 설정하는 함수"""
+    # Configure both logging and stdout redirection
+    log_filename = f'workflow_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    
+    # Configure logging
+    logging.basicConfig(
+        filename=log_filename,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        encoding='utf-8'
+    )
+
+    # Redirect stdout to both console and file
+    class TeeStream:
+        def __init__(self, filename, stream):
+            self.terminal = stream
+            self.file = open(filename, 'a', encoding='utf-8')
+
+        def write(self, message):
+            self.terminal.write(message)
+            self.file.write(message)
+            self.file.flush()
+
+        def flush(self):
+            self.terminal.flush()
+            self.file.flush()
+
+    sys.stdout = TeeStream(log_filename, sys.stdout)
+    
     # StateGraph 생성
     workflow = StateGraph(State)
     
@@ -44,8 +83,16 @@ def create_workflow() -> Any:
     workflow.add_node("building_analysis", building_analysis_node)
 
 
-    workflow.add_node("mongo_gen_query", mongo_gen_query_node)
+    workflow.add_node("mongo_query_gen", mongo_query_gen_node)
+    workflow.add_node("validate_mongo_query", validate_mongo_query_node)
+    workflow.add_node("regen_mongo_query", regen_mongo_query_node)
+
+    workflow.add_node("narrow_down_mongo_query", narrow_down_mongo_query_node)
+
+    workflow.add_node("error", error_node)
+
     workflow.add_node("fetch_gen_query", fetch_gen_query_node)
+    workflow.add_node("validate_fetch_data", validate_fetch_data_node)
     workflow.add_node("answer_fetched_gen_data", answer_fetched_gen_data_node)
 
     workflow.add_node("format_response", format_response_node)
@@ -77,14 +124,57 @@ def create_workflow() -> Any:
             'breaker_filter': 'breaker_filter',
             'building_analysis': 'building_analysis',
             'hierarchy_analysis': 'hierarchy_analysis',
-            'detail_analysis' : 'mongo_gen_query'
+            'detail_analysis' : 'mongo_query_gen'
         }
     )
 
-    workflow.add_edge("mongo_gen_query", "fetch_gen_query")
-    workflow.add_edge("fetch_gen_query", "answer_fetched_gen_data")
+    workflow.add_edge("mongo_query_gen", "validate_mongo_query")
+
+    workflow.add_conditional_edges(
+            'validate_mongo_query',
+            validate_mongo_query_rf,
+            {
+                'valid_mongo_query': 'fetch_gen_query',
+                'regen_mongo_query': 'regen_mongo_query'
+            }
+    )
+
+    workflow.add_edge("fetch_gen_query", "validate_fetch_data")
+    workflow.add_conditional_edges(
+            'validate_fetch_data',
+            validate_fetch_data_rf,
+            {
+                'valid_fetch_data': 'answer_fetched_gen_data',
+                'regen_mongo_query': 'regen_mongo_query',
+                'narrow_down_mongo_query': 'narrow_down_mongo_query'
+            }
+    )
+
+    workflow.add_conditional_edges(
+            'narrow_down_mongo_query',
+            narrow_down_mongo_query_rf,
+            {
+                'narrow_downed_success': 'validate_mongo_query',
+                'error': 'error'
+            }
+    )
+
+
+
+    workflow.add_conditional_edges(
+            'regen_mongo_query',
+            regen_mongo_query_rf,
+            {
+                'error': 'error',
+                'regened_mongo_query': 'fetch_gen_query',
+                'fetch_data': 'fetch_gen_query'
+            }
+    )
+
     workflow.add_edge("answer_fetched_gen_data", "generate_recommendations")
     workflow.add_edge("generate_recommendations", "human_interaction")
+
+    workflow.add_edge("error", "human_interaction")
 
     # 나머지 엣지 연결
     workflow.add_edge("breaker_filter", "fetch_active_breakers")

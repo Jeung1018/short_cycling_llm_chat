@@ -1,5 +1,6 @@
 from models.state import State
 from langchain.prompts import ChatPromptTemplate
+from backend.config import DATABASE_STRUCTURE
 
 
 def check_data_required_node(state: State) -> State:
@@ -7,6 +8,11 @@ def check_data_required_node(state: State) -> State:
     LLM을 사용하여 쿼리를 분석하고 추가 데이터 조회 필요 여부를 판단하는 노드
     """
     print('---ROUTE: CHECK DATA REQUIRED---')
+
+    state = {
+        **state,
+        "database_structure": DATABASE_STRUCTURE
+    }
 
     # 이전 대화 내용을 포함한 쿼리 생성
     chat_history = "\n".join(state.get("chat_history", []))  # chat_history 가져오기

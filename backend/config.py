@@ -18,3 +18,48 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "530_2024-10_monthly_report")
 DEFAULT_BUILDING_ID = "530"
 DEFAULT_MONTH = "October"
 DEFAULT_YEAR = "2024"
+
+DATABASE_STRUCTURE = """
+    {
+        building_id: "530",
+        month: "2024-10",
+        dates: [
+            {
+                date: "2024-10-01",
+                total_cycles: Number,
+                total_short_cycles: Number,
+                panels: [
+                    {
+                        panel_id: String,
+                        panel_name: String,
+                        total_cycles: Number,
+                        total_short_cycles: Number,
+                        breakers: [
+                            {
+                                breaker_id: String,
+                                breaker_name: String,
+                                total_cycles: Number,
+                                total_short_cycles: Number,
+                                short_cycles: [
+                                    {
+                                        Breaker ID: String,
+                                        Cycle Type: String,
+                                        Base Timestamp: String,
+                                        Previous Peak Timestamp: String,
+                                        Next Peak Timestamp: String,
+                                        "Off Duration (min)": Number,
+                                        "On Duration (min)": Number,
+                                        "Total Duration (min)": Number,
+                                        Base Power: Number,
+                                        Previous Peak Power: Number,
+                                        Next Peak Power: Number
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+    """
