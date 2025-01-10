@@ -5,6 +5,38 @@ from bson import ObjectId
 import tiktoken
 import json
 
+basic_query = [
+  { "$unwind": "$dates" },
+  { "$unwind": "$dates.panels" },
+  { "$unwind": "$dates.panels.breakers" },
+  { 
+    "$match": { 
+      "dates.panels.breakers.total_cycles": { "$gt": 0 } 
+    } 
+  },
+  { 
+    "$group": {
+      "_id": "$_id",
+      "building_id": { "$first": "$building_id" },
+      "building_name": { "$first": "$building_name" },
+      "month": { "$first": "$month" },
+      "dates": { 
+        "$push": {
+          "date": "$dates.date",
+          "panel_id": "$dates.panels.panel_id",
+          "panel_name": "$dates.panels.panel_name",
+          "breaker_id": "$dates.panels.breakers.breaker_id",
+          "breaker_name": "$dates.panels.breakers.breaker_name",
+          "total_cycles": "$dates.panels.breakers.total_cycles",
+          "total_short_cycles": "$dates.panels.breakers.total_short_cycles",
+          "visualization_url": "$dates.panels.breakers.visualization_url"
+        }
+      }
+    }
+  }
+]
+
+
 def convert_objectid(data):
     """
     Recursively convert ObjectId instances to strings in a MongoDB query result.
@@ -73,8 +105,9 @@ def fetch_gen_query_node(state: State) -> State:
     # 조건 체크 후 original_mongo_query로 교체
     if (state.get("query_regen_count", 0) >= 2 or 
         state.get("query_narrowed_count", 0) >= 2):
-        mongo_query = state.get("original_mongo_query")
-        print(f"Using original query")
+        original_query = state.get("original_mongo_query") # None, 빈 리스트, 빈 딕셔너리 등의 경우 basic_query 사용
+        mongo_query = basic_query
+        print(mongo_query)
 
     if not mongo_query:
         raise ValueError("MongoDB query is not available in state")
