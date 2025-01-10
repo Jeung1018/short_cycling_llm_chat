@@ -77,9 +77,9 @@ def generate_recommendations_node(state: State) -> State:
     # LLM 체인 실행
     chain = prompt | state["llm"]
     response = chain.invoke({
-        "query": state["query"],
+        "query": state.get("query"),
         "answer": state.get("answer", ""),
-        "chat_history": state["chat_history"]
+        "chat_history": state.get("chat_history", [])  # 기본값으로 빈 리스트 사용
     })
 
     # 응답을 리스트로 파싱
