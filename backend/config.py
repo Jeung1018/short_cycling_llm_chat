@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 # .env 파일 로드
 load_dotenv()
 
+#Langsmith 설정
+LANGCHAIN_API_KEY= os.getenv("LANGCHAIN_API_KEY")
+LANGSMITH_PROJECT=os.getenv("LANGSMITH_PROJECT")
+
 # OpenAI 설정
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_MODEL = "gpt-4o-mini"
