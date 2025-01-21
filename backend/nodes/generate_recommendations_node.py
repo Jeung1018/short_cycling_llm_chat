@@ -75,7 +75,7 @@ def generate_recommendations_node(state: State) -> State:
     ])
 
     # LLM 체인 실행
-    chain = prompt | state["llm"]
+    chain = prompt | state["mongo_query_model"]
     response = chain.invoke({
         "query": state.get("query"),
         "answer": state.get("answer", ""),

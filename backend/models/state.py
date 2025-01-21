@@ -37,5 +37,7 @@ class State(TypedDict):
     query_regen_count: int
     original_mongo_query: str
     data_truncated: bool
+    validate_query_model: Any
+    mongo_query_model: Any
 
 

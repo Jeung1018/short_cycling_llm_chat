@@ -18,7 +18,7 @@ def narrow_down_mongo_query_node(state: State) -> State:
     print(f'Narrow down attempt #{narrow_down_count}')
 
     # Execute LLM chain
-    chain = NARROW_DOWN_MONGO_QUERY_PROMPT | state["llm"]
+    chain = NARROW_DOWN_MONGO_QUERY_PROMPT | state["mongo_query_model"]
     response = chain.invoke({
         "query": state.get("query", ""),
         "current_query": json_util.dumps(state.get("mongo_query", {}), indent=2),

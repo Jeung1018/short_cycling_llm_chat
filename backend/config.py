@@ -13,6 +13,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 LLM_MODEL = "gpt-4o-mini"
 LLM_TEMPERATURE = 0.0
 
+MONGO_QUERY_MODEL = "gpt-4o-2024-11-20"
+LLM_MODEL_VALIDATION = "gpt-4o-2024-11-20"
+
+
 # MongoDB 설정
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
 DB_NAME = os.getenv("DB_NAME", "verdigris")

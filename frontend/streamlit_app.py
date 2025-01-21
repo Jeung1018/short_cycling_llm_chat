@@ -2,6 +2,7 @@ import sys
 import os
 from bson import ObjectId
 import json
+from datetime import datetime
 
 # 현재 파일의 디렉토리 경로를 찾습니다
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,6 +17,7 @@ import streamlit as st
 from backend.workflow import create_workflow
 from backend.config import OPENAI_API_KEY, LLM_MODEL, LLM_TEMPERATURE
 from langchain_openai import ChatOpenAI
+from langgraph.types import interrupt, Command
 from backend.models.state import State
 from utils.session_manager import (
     init_session_state,
@@ -54,39 +56,68 @@ def format_chat_history(history):
         ])
     return formatted_history
 
-def run_workflow(query: str, previous_docs=None, conversation_history=None) -> State:
+def run_workflow(query: str) -> State:
     """
     Executes the workflow and returns the state.
     """
-    # Initialize the LLM model
-    llm = ChatOpenAI(
-        model_name=LLM_MODEL,
-        temperature=LLM_TEMPERATURE,
-        openai_api_key=OPENAI_API_KEY
-    )
+    # Initialize the LLM model if not exists in session state
+    if 'llm' not in st.session_state:
+        st.session_state.llm = ChatOpenAI(
+            model_name=LLM_MODEL,
+            temperature=LLM_TEMPERATURE,
+            openai_api_key=OPENAI_API_KEY
+        )
     
-    # Create workflow
-    workflow = create_workflow()
+    # Create workflow if not exists in session state
+    if 'workflow' not in st.session_state:
+        st.session_state.workflow = create_workflow()
     
     # Configure thread_id
     thread_config = {"configurable": {"thread_id": "streamlit_session"}}
     
-    # Invoke workflow
-    state = workflow.invoke(
-        State(query=query, llm=llm),
-        config=thread_config
-    )
+    if 'current_state' not in st.session_state:
+        # First query - initialize new state
+        initial_state = State({
+            "query": query,
+            "llm": st.session_state.llm,
+            "chat_history": st.session_state.history if 'history' in st.session_state else []  # 기존 히스토리 전달
+        })
+        state = st.session_state.workflow.invoke(
+            initial_state,
+            config=thread_config
+        )
+    else:
+        # Resume from previous state with new query
+        current_state = st.session_state.current_state
+        current_state["query"] = query  # Update the query in the current state
+        current_state["chat_history"] = st.session_state.history if 'history' in st.session_state else []  # 기존 히스토리 전달
+        state = st.session_state.workflow.invoke(
+            Command(resume=query),
+            config=thread_config
+        )
+    
+    # Store the interrupted state for next query
+    st.session_state.current_state = state
     
     # Convert state to ensure no ObjectId remains
     state = convert_objectid(state)
     
-    print("Workflow result state keys:", state.keys())  # Debug
     return state
 
 def handle_recommended_question(query_text: str):
     """Handles recommended question clicks."""
     st.session_state.query = query_text
     st.session_state.run_query = True
+
+def load_markdown_content(filename):
+    """Load markdown content from a file."""
+    file_path = os.path.join(current_dir, 'texts', filename)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except Exception as e:
+        print(f"Error loading markdown file: {e}")
+        return "Error loading content."
 
 # Initialize session state
 init_session_state()
@@ -95,32 +126,8 @@ init_session_state()
 st.title("Short Cycling Analysis Chat")
 
 with st.expander("About This Prototype", expanded=False):
-    st.markdown("""
-    
-    This app is designed to analyze **short cycling energy anomalies** for **Building 530** during the **month of October 2024**. For each question, the app retrieves relevant data from the database and uses an AI language model to provide detailed, data-driven answers.
-
-    #### Getting Started:
-    - **Start with Overview Questions**:
-      - Examples:
-        - "Give me an overview of short cycling in Building 530 for October 2024"
-        - "What is the electrical hierarchy of Building 530?"
-        - "Show me the the peak day's detail short cycling trends in Building 530"
-    
-    #### Deep Dive Analysis:
-    - **Follow the Suggested Questions**:
-      - Each answer comes with relevant follow-up questions
-      - Questions are designed to guide you through:
-        - Panel-level analysis
-        - Breaker-specific patterns
-        - Temporal trends
-    
-    #### Important Notes:
-    - This app analyzes data for **Building 530** during **October 2024**
-    - Focus on **short cycling anomalies** and their patterns
-    - Use suggested follow-up questions to explore deeper insights
-
-    Start with an overview and follow the suggested questions to explore detailed insights!
-    """)
+    about_content = load_markdown_content('about.md')
+    st.markdown(about_content)
 
 query = st.text_input("Enter your query:")
 
@@ -135,10 +142,15 @@ with st.sidebar:
     if st.session_state.history:
         for item in reversed(st.session_state.history):
             with st.container():
-                st.markdown(f"**[{item['timestamp']}]**")
-                st.markdown(f"**Q:** {item['query']}")
+                # Add error handling for missing keys
+                timestamp = item.get('timestamp', 'No timestamp')
+                query = item.get('query', 'No query available')
+                answer = item.get('answer', 'No answer available')
+                
+                st.markdown(f"**[{timestamp}]**")
+                st.markdown(f"**Q:** {query}")
                 with st.expander("Show Answer", expanded=False):
-                    st.markdown(item['answer'])
+                    st.markdown(answer)
                 st.markdown("---")
     else:
         st.info("No chat history yet.")
@@ -147,32 +159,13 @@ if st.button("Submit", key="submit"):
     if query:
         try:
             with st.spinner("Processing your query..."):
-                formatted_history = format_chat_history(st.session_state.history)
-                state = run_workflow(
-                    query,
-                    previous_docs=st.session_state.previous_docs,
-                    conversation_history=formatted_history
-                )
-
-                print("State before processing:", {k: type(v) for k, v in state.items() if k != "llm"})
+                state = run_workflow(query)
 
                 st.success("Generated Answer:")
                 st.write(state["answer"])
 
-                try:
-                    print("Updating chat history...")
-                    update_chat_history(query, state["answer"])
-                    print("Chat history updated successfully")
-
-                    print("Updating session state...")
-                    # Convert state to JSON-serializable form
-                    serializable_state = convert_objectid(state)
-                    update_session_state(serializable_state)
-                    print("Session state updated successfully")
-
-                except Exception as e:
-                    print(f"Error during state update: {str(e)}")
-                    raise e
+                # Use the imported update_chat_history function
+                update_chat_history(query=query, answer=state["answer"])
 
                 if "rec_questions" in state:
                     st.markdown("---")

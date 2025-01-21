@@ -9,7 +9,7 @@ def mongo_query_gen_node(state: State) -> State:
     print('---ROUTE: MONGO QUERY GENERATION---')
 
     # LLM 체인 실행
-    chain = MONGO_GEN_QUERY_PROMPT | state["llm"]
+    chain = MONGO_GEN_QUERY_PROMPT | state["mongo_query_model"]
     response = chain.invoke({
         "query": state["query"],
         "chat_history": str(state.get("chat_history", []))  # chat_history 추가 및 기본값 설정
