@@ -10,8 +10,9 @@ def validate_mongo_query_node(state: State) -> State:
     """
     print('---ROUTE: VALIDATE MONGO QUERY FORMAT---')
 
+
     # Execute LLM chain
-    chain = VALIDATE_MONGO_QUERY_PROMPT | state["llm"]
+    chain = VALIDATE_MONGO_QUERY_PROMPT | state["validate_query_model"]
     query_str = json_util.dumps(state["mongo_query"], indent=2)
     
     response = chain.invoke({

@@ -171,7 +171,7 @@ def create_workflow() -> Any:
             regen_mongo_query_rf,
             {
                 'error': 'error',
-                'regened_mongo_query': 'fetch_gen_query',
+                'validate_mongo_query': 'validate_mongo_query',
                 'fetch_data': 'fetch_gen_query'
             }
     )

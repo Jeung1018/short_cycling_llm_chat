@@ -27,9 +27,9 @@ basic_query = [
           "panel_name": "$dates.panels.panel_name",
           "breaker_id": "$dates.panels.breakers.breaker_id",
           "breaker_name": "$dates.panels.breakers.breaker_name",
-          "total_cycles": "$dates.panels.breakers.total_cycles",
-          "total_short_cycles": "$dates.panels.breakers.total_short_cycles",
-          "visualization_url": "$dates.panels.breakers.visualization_url"
+          "breaker_total_cycles": "$dates.panels.breakers.total_cycles",
+          "breaker_total_short_cycles": "$dates.panels.breakers.total_short_cycles",
+          "breaker_visualization_url": "$dates.panels.breakers.visualization_url"
         }
       }
     }

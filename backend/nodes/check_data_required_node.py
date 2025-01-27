@@ -1,7 +1,7 @@
 from models.state import State
 from langchain.prompts import ChatPromptTemplate
-from backend.config import DATABASE_STRUCTURE
-
+from backend.config import DATABASE_STRUCTURE, LLM_MODEL_VALIDATION, LLM_TEMPERATURE, OPENAI_API_KEY, MONGO_QUERY_MODEL
+from langchain_openai import ChatOpenAI
 
 def check_data_required_node(state: State) -> State:
     """
@@ -11,12 +11,18 @@ def check_data_required_node(state: State) -> State:
 
     state = {
         **state,
-        "database_structure": DATABASE_STRUCTURE
+        "database_structure": DATABASE_STRUCTURE,
+        "validate_query_model": ChatOpenAI(
+        model_name=LLM_MODEL_VALIDATION,
+        temperature=LLM_TEMPERATURE,
+        openai_api_key=OPENAI_API_KEY
+    ),
+        "mongo_query_model": ChatOpenAI(
+        model_name=MONGO_QUERY_MODEL,
+        temperature=LLM_TEMPERATURE,
+        openai_api_key=OPENAI_API_KEY
+    )
     }
-
-    # 이전 대화 내용을 포함한 쿼리 생성
-    chat_history = "\n".join(state.get("chat_history", []))  # chat_history 가져오기
-    query_with_history = f"Chat History:\n{chat_history}\n\nUser Query:\n{state['query']}"
 
     # LLM 프롬프트 템플릿
     prompt = ChatPromptTemplate.from_messages([
@@ -44,7 +50,7 @@ def check_data_required_node(state: State) -> State:
     # LLM 체인 실행
     chain = prompt | state["llm"]
     response = chain.invoke({
-        "chat_history": chat_history,
+        "chat_history": state.get("chat_history", []),
         "query": state["query"],
         "building_info": state.get("building_info", {}),
         "building_hierarchy": state.get("building_hierarchy", {}),
@@ -54,12 +60,17 @@ def check_data_required_node(state: State) -> State:
     # LLM 응답을 boolean으로 변환
     needs_data = response.content.lower().strip() == 'true'
 
-    print(f"\nQuery with History: {query_with_history}")
     print(f"Needs Data: {needs_data}")
+
+    # chat_history 안전하게 처리
+    chat_history = state.get("chat_history", [])
+    add_human_query_to_chat_history = chat_history + [{"role": "You", "content": state["query"]}]
+
 
     return {
         **state,
-        "needs_data": needs_data
+        "needs_data": needs_data,
+        "chat_history": add_human_query_to_chat_history
     }
 
 def check_data_required_rf(state: State) -> str:

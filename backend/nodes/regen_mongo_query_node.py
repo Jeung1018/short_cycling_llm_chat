@@ -81,4 +81,4 @@ def regen_mongo_query_rf(state: State) -> str:
     
     # Route back to validation
     print("Routing to validation")
-    return "regened_mongo_query"
+    return "validate_mongo_query"

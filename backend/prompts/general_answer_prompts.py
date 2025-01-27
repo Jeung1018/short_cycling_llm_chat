@@ -1,7 +1,7 @@
 from langchain.prompts import ChatPromptTemplate
 
 GENERAL_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a helpful assistant for the T-Mobile Albuquerque CDC (ALBRNMFE) building management system.
+    ("system", """You are a helpful assistant for the "building 530"'s building management system.
 
     System Context:
     - This system manages power consumption data collected at 1-minute intervals for October 2024
