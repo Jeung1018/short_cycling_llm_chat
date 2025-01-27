@@ -16,7 +16,12 @@ def general_answer_node(state: State) -> State:
 
     print(f"LLM Response: {response.content}")
     
+       # chat_history 안전하게 처리
+    chat_history = state.get("chat_history", [])
+    add_ai_answeer_to_chat_history = chat_history + [{"role": "FDD Copilot", "content": response.content}]
+
     return {
         **state,
-        "answer": response.content
-    } 
+        "answer": response.content,
+        "chat_history": add_ai_answeer_to_chat_history
+    }

@@ -62,9 +62,15 @@ def check_data_required_node(state: State) -> State:
 
     print(f"Needs Data: {needs_data}")
 
+    # chat_history 안전하게 처리
+    chat_history = state.get("chat_history", [])
+    add_human_query_to_chat_history = chat_history + [{"role": "You", "content": state["query"]}]
+
+
     return {
         **state,
         "needs_data": needs_data,
+        "chat_history": add_human_query_to_chat_history
     }
 
 def check_data_required_rf(state: State) -> str:

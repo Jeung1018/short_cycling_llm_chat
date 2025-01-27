@@ -39,5 +39,6 @@ class State(TypedDict):
     data_truncated: bool
     validate_query_model: Any
     mongo_query_model: Any
+    query_type: str
 
 

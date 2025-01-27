@@ -79,8 +79,7 @@ def run_workflow(query: str) -> State:
         # First query - initialize new state
         initial_state = State({
             "query": query,
-            "llm": st.session_state.llm,
-            "chat_history": st.session_state.history if 'history' in st.session_state else []  # 기존 히스토리 전달
+            "llm": st.session_state.llm
         })
         state = st.session_state.workflow.invoke(
             initial_state,
@@ -90,17 +89,13 @@ def run_workflow(query: str) -> State:
         # Resume from previous state with new query
         current_state = st.session_state.current_state
         current_state["query"] = query  # Update the query in the current state
-        current_state["chat_history"] = st.session_state.history if 'history' in st.session_state else []  # 기존 히스토리 전달
         state = st.session_state.workflow.invoke(
             Command(resume=query),
             config=thread_config
         )
     
-    # Store the interrupted state for next query
+    # Store the updated state in session_state
     st.session_state.current_state = state
-    
-    # Convert state to ensure no ObjectId remains
-    state = convert_objectid(state)
     
     return state
 
@@ -123,7 +118,7 @@ def load_markdown_content(filename):
 init_session_state()
 
 # Main content area
-st.title("Short Cycling Analysis Chat")
+st.title("FDD Copilot Prototype")
 
 with st.expander("About This Prototype", expanded=False):
     about_content = load_markdown_content('about.md')
@@ -131,42 +126,22 @@ with st.expander("About This Prototype", expanded=False):
 
 query = st.text_input("Enter your query:")
 
-# Sidebar for chat history
-with st.sidebar:
-    st.markdown("## 💬 Chat History")
-    
-    if st.button("Clear History", key="clear_history"):
-        clear_session_state()
-        st.info("Chat history cleared.")
-        
-    if st.session_state.history:
-        for item in reversed(st.session_state.history):
-            with st.container():
-                # Add error handling for missing keys
-                timestamp = item.get('timestamp', 'No timestamp')
-                query = item.get('query', 'No query available')
-                answer = item.get('answer', 'No answer available')
-                
-                st.markdown(f"**[{timestamp}]**")
-                st.markdown(f"**Q:** {query}")
-                with st.expander("Show Answer", expanded=False):
-                    st.markdown(answer)
-                st.markdown("---")
-    else:
-        st.info("No chat history yet.")
 
+# Query submission
 if st.button("Submit", key="submit"):
     if query:
         try:
-            with st.spinner("Processing your query..."):
+            with st.spinner("Asking FDD Copilot..."):
+                # Process the query and get the updated state
                 state = run_workflow(query)
+
+                # Store the new state in session_state
+                st.session_state.current_state = state
 
                 st.success("Generated Answer:")
                 st.write(state["answer"])
 
-                # Use the imported update_chat_history function
-                update_chat_history(query=query, answer=state["answer"])
-
+                # Display suggested follow-up questions if available
                 if "rec_questions" in state:
                     st.markdown("---")
                     st.subheader("💡 Suggested follow-up questions:")
@@ -174,10 +149,48 @@ if st.button("Submit", key="submit"):
                         st.markdown(f"**{i}.** {q}")
 
         except Exception as e:
-            print(f"Full error details: {str(e)}")
             st.error(f"An error occurred: {e}")
     else:
         st.warning("Please enter a query.")
+
+# Sidebar for chat history
+with st.sidebar:
+    st.markdown("## 💬 Chat History")
+
+    # Clear history button
+    if st.button("Clear History", key="clear_history"):
+        clear_session_state()
+        st.info("Chat history cleared.")
+
+    # Check if 'current_state' and 'chat_history' exist in session_state
+    if 'current_state' in st.session_state and "chat_history" in st.session_state.current_state:
+        chat_history = st.session_state.current_state["chat_history"]
+
+        if chat_history:
+            # Iterate over chat history in pairs (1 question + 1 answer)
+            for i in range(0, len(chat_history), 2):
+                # Get the user's question
+                user_message = chat_history[i]
+                user_content = user_message.get("content", "No content available")
+
+                # Get the assistant's response
+                assistant_message = chat_history[i + 1] if i + 1 < len(chat_history) else None
+                assistant_content = assistant_message.get("content", "No response available") if assistant_message else "No response available"
+
+                # Display the question
+                st.markdown(f"**You: {user_content}**")
+
+                # Display the answer inside an expander
+                st.markdown("**FDD Copilot:**")
+                with st.expander("Show Answer", expanded=False):
+                    st.markdown(assistant_content)
+
+                # Add a separator for readability
+                st.markdown("---")
+        else:
+            st.info("No chat history yet.")
+    else:
+        st.info("No chat history available.")
 
 st.markdown("""
 <script>
