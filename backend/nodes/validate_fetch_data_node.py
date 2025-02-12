@@ -69,7 +69,7 @@ def validate_fetch_data_rf(state: State) -> str:
         return "regen_mongo_query"
     
         # MongoDB 쿼리 에러 체크
-    if isinstance(state.get("fetched_gen_data"), str) and "Error executing MongoDB query" in state["fetched_gen_data"]:
+    if isinstance(state.get("fetched_gen_data"), str) and "Error executing query" in state["fetched_gen_data"]:
         print('MongoDB query execution error detected')
         state["invalid_query_reason"] = state["fetched_gen_data"]
         return "regen_mongo_query"
