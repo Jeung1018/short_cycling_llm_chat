@@ -124,7 +124,7 @@ with st.expander("About This Prototype", expanded=False):
     about_content = load_markdown_content('about.md')
     st.markdown(about_content)
 
-query = st.text_input("Enter your query:")
+query = st.text_area("Enter your query:", height=100)
 
 
 # Query submission
@@ -153,6 +153,7 @@ if st.button("Submit", key="submit"):
     else:
         st.warning("Please enter a query.")
 
+
 # Sidebar for chat history
 with st.sidebar:
     st.markdown("## 💬 Chat History")
@@ -160,22 +161,21 @@ with st.sidebar:
     # Clear history button
     if st.button("Clear History", key="clear_history"):
         clear_session_state()
-        st.info("Chat history cleared.")
+        st.info("Chat history cleared.")     
 
+    
     # Check if 'current_state' and 'chat_history' exist in session_state
     if 'current_state' in st.session_state and "chat_history" in st.session_state.current_state:
         chat_history = st.session_state.current_state["chat_history"]
 
         if chat_history:
-            # Iterate over chat history in pairs (1 question + 1 answer)
-            for i in range(0, len(chat_history), 2):
+            # Iterate over chat history in pairs (user_message, assistant_message)
+            for user_message, assistant_message in zip(chat_history[::2], chat_history[1::2]):
                 # Get the user's question
-                user_message = chat_history[i]
                 user_content = user_message.get("content", "No content available")
 
                 # Get the assistant's response
-                assistant_message = chat_history[i + 1] if i + 1 < len(chat_history) else None
-                assistant_content = assistant_message.get("content", "No response available") if assistant_message else "No response available"
+                assistant_content = assistant_message.get("content", "No response available")
 
                 # Display the question
                 st.markdown(f"**You: {user_content}**")
@@ -187,6 +187,13 @@ with st.sidebar:
 
                 # Add a separator for readability
                 st.markdown("---")
+            
+            # Handle case where there's an extra user question without a response
+            if len(chat_history) % 2 != 0:
+                last_question = chat_history[-1].get("content", "No content available")
+                st.markdown(f"**You: {last_question}**")
+                st.markdown("**FDD Copilot:** No response available.")
+
         else:
             st.info("No chat history yet.")
     else:
@@ -213,3 +220,4 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+

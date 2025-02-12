@@ -56,18 +56,6 @@ Start the Streamlit app:
 
     streamlit run frontend/streamlit_app.py
 
-## Running Tests
-
-See [tests/README.md](tests/README.md) for detailed testing information.
-
-Basic test commands:
-
-    # Run all tests
-    pytest tests/
-
-    # Run with verbose output
-    pytest -v tests/
-
 ## Features
 
 - Interactive chat interface
