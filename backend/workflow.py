@@ -21,8 +21,8 @@ from nodes.validate_mongo_query_node import validate_mongo_query_node, validate_
 from nodes.regen_mongo_query_node import regen_mongo_query_node, regen_mongo_query_rf
 from nodes.narrow_down_mongo_query_node import narrow_down_mongo_query_node, narrow_down_mongo_query_rf
 
-from nodes.fetch_gen_query_node import fetch_gen_query_node
-from nodes.answer_fetched_gen_data_node import answer_fetched_gen_data_node
+from nodes.fetch_data_w_query_node import fetch_data_w_query_node
+from nodes.answer_w_fetched_data_node import answer_w_fetched_data_node
 from nodes.generate_recommendations_node import generate_recommendations_node
 
 from nodes.error_node import error_node
@@ -96,9 +96,9 @@ def create_workflow() -> Any:
 
     workflow.add_node("error", error_node)
 
-    workflow.add_node("fetch_gen_query", fetch_gen_query_node)
+    workflow.add_node("fetch_data_w_query", fetch_data_w_query_node)
     workflow.add_node("validate_fetch_data", validate_fetch_data_node)
-    workflow.add_node("answer_fetched_gen_data", answer_fetched_gen_data_node)
+    workflow.add_node("answer_w_fetched_data", answer_w_fetched_data_node)
 
     workflow.add_node("format_response", format_response_node)
 
@@ -139,17 +139,17 @@ def create_workflow() -> Any:
             'validate_mongo_query',
             validate_mongo_query_rf,
             {
-                'valid_mongo_query': 'fetch_gen_query',
+                'valid_mongo_query': 'fetch_data_w_query',
                 'regen_mongo_query': 'regen_mongo_query'
             }
     )
 
-    workflow.add_edge("fetch_gen_query", "validate_fetch_data")
+    workflow.add_edge("fetch_data_w_query", "validate_fetch_data")
     workflow.add_conditional_edges(
             'validate_fetch_data',
             validate_fetch_data_rf,
             {
-                'valid_fetch_data': 'answer_fetched_gen_data',
+                'valid_fetch_data': 'answer_w_fetched_data',
                 'regen_mongo_query': 'regen_mongo_query',
                 'narrow_down_mongo_query': 'narrow_down_mongo_query'
             }
@@ -172,11 +172,11 @@ def create_workflow() -> Any:
             {
                 'error': 'error',
                 'validate_mongo_query': 'validate_mongo_query',
-                'fetch_data': 'fetch_gen_query'
+                'fetch_data': 'fetch_data_w_query'
             }
     )
 
-    workflow.add_edge("answer_fetched_gen_data", "generate_recommendations")
+    workflow.add_edge("answer_w_fetched_data", "generate_recommendations")
     workflow.add_edge("generate_recommendations", "human_interaction")
 
     workflow.add_edge("error", "human_interaction")

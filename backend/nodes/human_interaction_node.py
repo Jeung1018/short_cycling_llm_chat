@@ -30,14 +30,11 @@ def human_interaction_node(state: State) -> Command[Literal["additional_question
     
     # Streamlit에서 resume=query로 전달된 값이 여기서 처리됨
     if isinstance(query, str) and query.strip():
-        updated_chat_history = chat_history + [{"role": "You", "content": query}]
         print(f"Query: {query}")
-        print(f"Updated chat history after user input: {updated_chat_history}")
         
         return Command(
             goto="check_data_required",
             update={
-                #"chat_history": updated_chat_history,
                 "query": query
             }
         )
