@@ -121,7 +121,7 @@ init_session_state()
 st.title("FDD Copilot Prototype")
 
 with st.expander("About This Prototype", expanded=False):
-    about_content = load_markdown_content('about.md')
+    about_content = load_markdown_content('about_v2.md')
     st.markdown(about_content)
 
 query = st.text_area("Enter your query:", height=100)
