@@ -1,23 +1,35 @@
-This app is designed to analyze **short cycling energy anomalies** for **Building 530** during the **month of October 2024**. For each question, the app retrieves relevant data from the database and uses an AI language model to provide detailed, data-driven answers.
+## About This Prototype
 
-#### Getting Started:
-- **Start with Overview Questions**:
-  - Examples:
-    - "Give me an overview of short cycling in Building 530 for October 2024"
-    - "What is the electrical hierarchy of Building 530?"
-    - "Show me the the peak day's detail short cycling trends in Building 530"
+Welcome to the Verdigris FDD Copilot!
 
-#### Deep Dive Analysis:
-- **Follow the Suggested Questions**:
-  - Each answer comes with relevant follow-up questions
-  - Questions are designed to guide you through:
-    - Panel-level analysis
-    - Breaker-specific patterns
-    - Temporal trends
+## What Is This?
 
-#### Important Notes:
-- This app analyzes data for **Building 530** during **October 2024**
-- Focus on **short cycling anomalies** and their patterns
-- Use suggested follow-up questions to explore deeper insights
+This is an AI-powered assistant that helps data center operations teams find and fix equipment problems before they cause downtime. Think of it as having a experienced analyst who can instantly spot patterns in your electrical data and explain what they mean.
 
-Start with an overview and follow the suggested questions to explore detailed insights! 
+Your Test Facility:
+
+- Building 530: A 10MW data center
+- Time Period: October 2024
+- Focus Area: HVAC equipment cycling on/off too frequently (particularly CRAHs)
+
+What You Can Do:
+
+1. Ask questions about what equipments are being monitored
+2. Analyze anomaly patterns
+3. Follow-up 
+4. Get maintenance recommendations
+
+Example Questions:
+
+- "What issues did you find in the facility?"
+- "Show me which CRAHs are short cycling"
+- "What's the impact on our power reliability?"
+
+Current Limitations:
+
+- Only analyzes Building 530 data
+- Only covers October 2024
+- Focuses on HVAC short cycling (more capabilities coming soon!)
+- Works with historical data only (no real-time)
+
+Ready to start? Try asking "What issues did you find in the facility?" and follow the suggested questions to explore further.
