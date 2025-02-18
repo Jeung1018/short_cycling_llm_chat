@@ -50,13 +50,13 @@ def convert_objectid(data):
     return data
 
 
-def count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
+def count_tokens(text: str, model: str = "gpt-4o-mini") -> int:
     """
     주어진 텍스트의 토큰 수를 계산합니다.
 
     Args:
         text (str): 토큰 수를 계산할 텍스트
-        model (str): 사용할 모델 이름 (기본값: "gpt-3.5-turbo")
+        model (str): 사용할 모델 이름 (기본값: "gpt-4o-mini")
 
     Returns:
         int: 토큰 수
@@ -88,7 +88,7 @@ def truncate_data_by_tokens(data, max_tokens=90000):
     
     return truncated_data
 
-def fetch_gen_query_node(state: State) -> State:
+def fetch_data_w_query_node(state: State) -> State:
     """
     LLM이 생성한 MongoDB 쿼리를 실행하여 데이터를 조회하는 노드
     """
@@ -130,11 +130,12 @@ def fetch_gen_query_node(state: State) -> State:
         
         # 결과 데이터의 토큰 수 계산
         token_count = count_tokens(result_list)
+        print(f"fetched data: {result_list}")
         print(f"fetched data contains approximately {token_count} tokens")
         
         return {
             **state,
-            "fetched_gen_data": result_list,
+            "fetched_data": result_list,
             "query_token_count": token_count,
             "data_truncated": len(result_list) < len(list(result))  # 데이터가 잘렸는지 여부 저장
         }
@@ -143,5 +144,5 @@ def fetch_gen_query_node(state: State) -> State:
         print(f"Error executing MongoDB query: {str(e)}")
         return {
             **state,
-            "fetched_gen_data": f"Error executing query: {str(e)}"
+            "fetched_data": f"Error executing query: {str(e)}"
         }

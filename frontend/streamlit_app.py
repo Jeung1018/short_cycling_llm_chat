@@ -121,7 +121,7 @@ init_session_state()
 st.title("FDD Copilot Prototype")
 
 with st.expander("About This Prototype", expanded=False):
-    about_content = load_markdown_content('about.md')
+    about_content = load_markdown_content('about_v2.md')
     st.markdown(about_content)
 
 query = st.text_area("Enter your query:", height=100)
@@ -168,6 +168,7 @@ with st.sidebar:
     if 'current_state' in st.session_state and "chat_history" in st.session_state.current_state:
         chat_history = st.session_state.current_state["chat_history"]
 
+        print(f"chat_history: {chat_history}")
         if chat_history:
             # Iterate over chat history in pairs (user_message, assistant_message)
             for user_message, assistant_message in zip(chat_history[::2], chat_history[1::2]):

@@ -16,11 +16,11 @@ def validate_fetch_data_node(state: State) -> State:
     """
     print('---VALIDATING FETCHED DATA---')
     
-    if "fetched_gen_data" not in state:
+    if "fetched_data" not in state:
         print('No fetched data to validate')
         return state
         
-    token_count = count_tokens(state["fetched_gen_data"])
+    token_count = count_tokens(state["fetched_data"])
     print(f'Fetched data contains {token_count} tokens')
     
     # token count가 100000 이상이면 original_mongo_query 저장
@@ -49,8 +49,8 @@ def validate_fetch_data_rf(state: State) -> str:
     """
     print('---FETCH DATA VALIDATION ROUTING---')
     
-    # fetched_gen_data 존재 여부 먼저 확인
-    if "fetched_gen_data" not in state:
+    # fetched_data 존재 여부 먼저 확인
+    if "fetched_data" not in state:
         print('No fetched data found, narrowing down query')
         return "narrow_down_mongo_query"
     
@@ -64,14 +64,14 @@ def validate_fetch_data_rf(state: State) -> str:
     
     if state.get("token_count", 0) <= 5:
         print(f'Token count ({state.get("token_count")}) too small, regen query')
-        print(f'fetched_gen_data: {state.get("fetched_gen_data", {})}')
+        print(f'fetched_data: {state.get("fetched_data", {})}')
         state["invalid_query_reason"] = "Current mongo_query fetch no data, please check the user input and regenerate the mongo_query"
         return "regen_mongo_query"
     
-        # MongoDB 쿼리 에러 체크
-    if isinstance(state.get("fetched_gen_data"), str) and "Error executing query" in state["fetched_gen_data"]:
+    # MongoDB 쿼리 에러 체크
+    if isinstance(state.get("fetched_data"), str) and "Error executing query" in state["fetched_data"]:
         print('MongoDB query execution error detected')
-        state["invalid_query_reason"] = state["fetched_gen_data"]
+        state["invalid_query_reason"] = state["fetched_data"]
         return "regen_mongo_query"
     
     print(f'Data validation passed with {state.get("token_count", 0)} tokens')
